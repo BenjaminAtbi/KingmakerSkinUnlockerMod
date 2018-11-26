@@ -6,5 +6,7 @@
   "ManagerVersion": "0.12.0",
   "Requirements": [],
   "AssemblyName": "HairUnlocker.dll",
-  "EntryMethod": "HairUnlocker.Main.Load"
+  "EntryMethod": "HairUnlocker.Main.Load",
+  "HomePage": "https://github.com/spacehamster/KingmakerHairUnlockerMod",
+  "Repository": "https://raw.githubusercontent.com/spacehamster/KingmakerHairUnlockerMod/master/HairUnlocker/Repository.json"
 }
