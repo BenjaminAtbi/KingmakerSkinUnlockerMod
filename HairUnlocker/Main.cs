@@ -7,6 +7,9 @@ using Kingmaker;
 using UnityEngine.SceneManagement;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
+using Kingmaker.ResourceLinks;
+using System.Collections.Generic;
+
 namespace HairUnlocker
 {
 
@@ -50,15 +53,28 @@ namespace HairUnlocker
                 
             }
         }
+        static EquipmentEntityLink[] Combine(EquipmentEntityLink[] from, EquipmentEntityLink[] to)
+        {
+            var result = new List<EquipmentEntityLink>(to);
+            foreach(var eel in from)
+            {
+                if(result.Exists(toEEL => eel.AssetId == toEEL.AssetId))
+                {
+                    continue;
+                }
+                result.Add(eel);
+            }
+            return result.ToArray();
+        }
         static void AddHair(BlueprintRace from, BlueprintRace to)
         {
             foreach (var gender in new Gender[] { Gender.Male, Gender.Female })
             {
                 var fromOptions = gender == Gender.Male ? from.MaleOptions : from.FemaleOptions;
                 var toOptions = gender == Gender.Male ? to.MaleOptions : to.FemaleOptions;
-                foreach (var ee in fromOptions.Hair) if (!toOptions.Hair.Contains(ee)) toOptions.Hair = toOptions.Hair.Add(ee).ToArray();
-                foreach (var ee in fromOptions.Eyebrows) if (!toOptions.Eyebrows.Contains(ee)) toOptions.Eyebrows = toOptions.Eyebrows.Add(ee).ToArray();
-                foreach (var ee in fromOptions.Beards) if (!toOptions.Beards.Contains(ee)) toOptions.Beards = toOptions.Beards.Add(ee).ToArray();
+                fromOptions.Hair = Combine(fromOptions.Hair, toOptions.Hair);
+                fromOptions.Eyebrows = Combine(fromOptions.Eyebrows, toOptions.Eyebrows);
+                fromOptions.Beards = Combine(fromOptions.Beards, toOptions.Beards);
             }
         }
         static void UnlockHair()
