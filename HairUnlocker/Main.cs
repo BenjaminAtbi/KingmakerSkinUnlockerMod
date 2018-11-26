@@ -46,7 +46,6 @@ namespace HairUnlocker
             if (scene.name == SceneName.MainMenu)
             {
                 if (loaded) return;
-                DebugLog("Unlocking Hair");
                 UnlockHair();
                 
             }
@@ -62,21 +61,7 @@ namespace HairUnlocker
                 foreach (var ee in fromOptions.Beards) if (!toOptions.Beards.Contains(ee)) toOptions.Beards = toOptions.Beards.Add(ee).ToArray();
             }
         }
-        static void UnlockHair2()
-        {
-
-            foreach (var from in Game.Instance.BlueprintRoot.Progression.CharacterRaces)
-            {
-                foreach (var to in Game.Instance.BlueprintRoot.Progression.CharacterRaces)
-                {
-                    if (from == to) continue;
-                    if (from.AssetGuid.Length > 32 || to.AssetGuid.Length > 32) continue;
-                    DebugLog($"Unlocking {from.name} {from.AssetGuid.Length} {to.name} {to.AssetGuid.Length}");
-                    AddHair(from, to);
-                }
-            }
-        }
-            static void UnlockHair()
+        static void UnlockHair()
         {
             var groups = new BlueprintRace[][]
             {
@@ -88,11 +73,7 @@ namespace HairUnlocker
                 new BlueprintRace[]{
                     ResourcesLibrary.TryGetBlueprint<BlueprintRace>("ef35a22c9a27da345a4528f0d5889157"), //Gnome
                     ResourcesLibrary.TryGetBlueprint<BlueprintRace>("b0c3ef2729c498f47970bb50fa1acd30"), //Halfling
-                },
-                /*new BlueprintRace[]{
-                    ResourcesLibrary.TryGetBlueprint<BlueprintRace>("25a5878d125338244896ebd3238226c8"), //Elf
-                    ResourcesLibrary.TryGetBlueprint<BlueprintRace>("b3646842ffbd01643ab4dac7479b20b0"), //Halfelf
-                },*/
+                }
             };
             foreach (var group in groups)
             {
