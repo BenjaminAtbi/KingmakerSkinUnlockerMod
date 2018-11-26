@@ -72,9 +72,9 @@ namespace HairUnlocker
             {
                 var fromOptions = gender == Gender.Male ? from.MaleOptions : from.FemaleOptions;
                 var toOptions = gender == Gender.Male ? to.MaleOptions : to.FemaleOptions;
-                fromOptions.Hair = Combine(fromOptions.Hair, toOptions.Hair);
-                fromOptions.Eyebrows = Combine(fromOptions.Eyebrows, toOptions.Eyebrows);
-                fromOptions.Beards = Combine(fromOptions.Beards, toOptions.Beards);
+                toOptions.Hair = Combine(fromOptions.Hair, toOptions.Hair);
+                toOptions.Eyebrows = Combine(fromOptions.Eyebrows, toOptions.Eyebrows);
+                toOptions.Beards = Combine(fromOptions.Beards, toOptions.Beards);
             }
         }
         static void UnlockHair()
