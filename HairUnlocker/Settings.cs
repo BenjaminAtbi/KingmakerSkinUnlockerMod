@@ -9,7 +9,11 @@ namespace HairUnlocker
 {
     public class Settings : UnityModManager.ModSettings
     {
+        public bool UnlockHair = false;
         public bool UnlockAllHair = false;
+        public bool UnlockHorns = false;
+        public bool UnlockTail = false;
+        public bool UnlockFemaleDwarfBeards = false;
         public override void Save(UnityModManager.ModEntry modEntry)
         {
             Save(this, modEntry);

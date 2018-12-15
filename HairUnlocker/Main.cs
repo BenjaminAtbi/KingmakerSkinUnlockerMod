@@ -11,6 +11,7 @@ using Kingmaker.ResourceLinks;
 using System.Collections.Generic;
 using Kingmaker.Blueprints.CharGen;
 using UnityEngine;
+using Kingmaker.Blueprints.Root;
 
 namespace HairUnlocker
 {
@@ -25,6 +26,7 @@ namespace HairUnlocker
         }
         static bool loaded = false;
         static bool enabled;
+        static bool displayDebug = false;
         static Settings settings;
         static Dictionary<string, CustomizationOptions> originalOptions = new Dictionary<string, CustomizationOptions>();
         static bool Load(UnityModManager.ModEntry modEntry)
@@ -51,24 +53,45 @@ namespace HairUnlocker
             if (loaded)
             {
                 if (!enabled) RestoreOptions();
-                else UnlockHair();
+                else Unlock();
             }
             return true; // Permit or not.
         }
+        static void ChooseToggle(ref bool value, string text)
+        {
+            var result = GUILayout.Toggle(value, text);
+            if(result != value)
+            {
+                value = result;
+                RestoreOptions();
+                Unlock();
+            }
+        }
         static void OnGUI(UnityModManager.ModEntry modEntry)
         {
-            if (!loaded) return;
-            var result = GUILayout.Toggle(settings.UnlockAllHair, "Unlock All Options (Including incompatible options)");
-            if (result != settings.UnlockAllHair)
+            try
             {
-                settings.UnlockAllHair = result;
-                RestoreOptions();
-                UnlockHair();
-            }
+                if (!loaded) return;
+                ChooseToggle(ref settings.UnlockHair, "Unlock Hair Options");
+                if(settings.UnlockHair) ChooseToggle(ref settings.UnlockAllHair, "Unlock All Hair Options (Includes incompatible options)");
+                if (BlueprintRoot.Instance.DlcSettings.Tieflings.Enabled)
+                {
+                    ChooseToggle(ref settings.UnlockHorns, "Unlock Horns");
+                    ChooseToggle(ref settings.UnlockTail, "Unlock Tails");
+                }
+                ChooseToggle(ref settings.UnlockFemaleDwarfBeards, "Unlock Female Dwarf Beards (Includes incompatible options)");
 #if (DEBUG)
-            DisplayInfo.ShowDoll();
-            DisplayInfo.ShowHair();
+                displayDebug = GUILayout.Toggle(displayDebug, "Show DisplayOptions");
+                if (displayDebug)
+                {
+                    DisplayInfo.ShowDoll();
+                    DisplayInfo.ShowHair();
+                }
 #endif
+            } catch (Exception ex)
+            {
+                DebugLog(ex.ToString() + "\n" + ex.StackTrace);
+            }
         }
         static void OnSaveGUI(UnityModManager.ModEntry modEntry)
         {
@@ -79,46 +102,36 @@ namespace HairUnlocker
             if (scene.name == SceneName.MainMenu)
             {
                 if (loaded) return;
-                foreach(var race in Game.Instance.BlueprintRoot.Progression.CharacterRaces)
+                foreach(var race in GetAllRaces())
                 {
-                    if (race.AssetGuid.Length != 32) continue;
                     originalOptions[race.name + Gender.Male] = race.MaleOptions;
                     originalOptions[race.name + Gender.Female] = race.FemaleOptions;
-                    race.MaleOptions = new CustomizationOptions()
-                    {
-                        Heads = (EquipmentEntityLink[])race.MaleOptions.Heads.Clone(),
-                        Hair = (EquipmentEntityLink[])race.MaleOptions.Hair.Clone(),
-                        Eyebrows = (EquipmentEntityLink[])race.MaleOptions.Eyebrows.Clone(),
-                        Beards = (EquipmentEntityLink[])race.MaleOptions.Beards.Clone(),
-                    };
-                    race.FemaleOptions = new CustomizationOptions()
-                    {
-                        Heads = (EquipmentEntityLink[])race.FemaleOptions.Heads.Clone(),
-                        Hair = (EquipmentEntityLink[])race.FemaleOptions.Hair.Clone(),
-                        Eyebrows = (EquipmentEntityLink[])race.FemaleOptions.Eyebrows.Clone(),
-                        Beards = (EquipmentEntityLink[])race.FemaleOptions.Beards.Clone(),
-                    };
                 }
                 loaded = true;
                 if (!enabled) return;
-                UnlockHair();
+                Unlock();
                 
             }
         }
+        static BlueprintRace[] GetAllRaces()
+        {
+            return Game.Instance.BlueprintRoot.Progression.CharacterRaces;
+        }
         static void RestoreOptions()
         {
-            foreach (var race in Game.Instance.BlueprintRoot.Progression.CharacterRaces)
+            foreach (var race in GetAllRaces())
             {
-                if (race.AssetGuid.Length != 32) continue;
-                if (originalOptions.ContainsKey(race.name + Gender.Male))
-                {
-                    race.MaleOptions = originalOptions[race.name + Gender.Male];
-                }
-                if (originalOptions.ContainsKey(race.name + Gender.Male))
-                {
-                    race.FemaleOptions = originalOptions[race.name + Gender.Female];
-                }
+                race.MaleOptions = GetOriginalOptions(race, Gender.Male);
+                race.FemaleOptions = GetOriginalOptions(race, Gender.Female);
             }
+        }
+        static CustomizationOptions GetOriginalOptions(BlueprintRace race, Gender gender)
+        {
+            if(originalOptions.ContainsKey(race.name + gender))
+            {
+                return originalOptions[race.name + gender];
+            }
+            throw new KeyNotFoundException($"Couldn't find key {race.name + gender}");
         }
         static EquipmentEntityLink[] Combine(EquipmentEntityLink[] from, EquipmentEntityLink[] to)
         {
@@ -151,8 +164,8 @@ namespace HairUnlocker
         {
             foreach (var gender in new Gender[] { Gender.Male, Gender.Female })
             {
-                var originalSource = originalOptions[sourceRace.name + gender];
-                var originalTarget = originalOptions[targetRace.name + gender];
+                var originalSource = GetOriginalOptions(sourceRace, gender);
+                var originalTarget = GetOriginalOptions(targetRace, gender);
                 var newSource = gender == Gender.Male ? sourceRace.MaleOptions : sourceRace.FemaleOptions;
                 var newTarget = gender == Gender.Male ? targetRace.MaleOptions : targetRace.FemaleOptions;
                 newTarget.Hair = Combine(newSource.Hair, newTarget.Hair);
@@ -160,16 +173,80 @@ namespace HairUnlocker
                 AddEyebrowsDefaultEyebrows(newSource, newTarget, originalTarget);
             }
         }
+        static void CopyOptions()
+        {
+            foreach (var race in GetAllRaces())
+            {
+                race.MaleOptions = new CustomizationOptions()
+                {
+                    Heads = (EquipmentEntityLink[])race.MaleOptions.Heads.Clone(),
+                    Hair = (EquipmentEntityLink[])race.MaleOptions.Hair.Clone(),
+                    Eyebrows = (EquipmentEntityLink[])race.MaleOptions.Eyebrows.Clone(),
+                    Beards = (EquipmentEntityLink[])race.MaleOptions.Beards.Clone(),
+                    Horns = (EquipmentEntityLink[])race.MaleOptions.Horns.Clone(),
+                    TailSkinColors = (EquipmentEntityLink[])race.MaleOptions.TailSkinColors.Clone(),
+                };
+                race.FemaleOptions = new CustomizationOptions()
+                {
+                    Heads = (EquipmentEntityLink[])race.FemaleOptions.Heads.Clone(),
+                    Hair = (EquipmentEntityLink[])race.FemaleOptions.Hair.Clone(),
+                    Eyebrows = (EquipmentEntityLink[])race.FemaleOptions.Eyebrows.Clone(),
+                    Beards = (EquipmentEntityLink[])race.FemaleOptions.Beards.Clone(),
+                    Horns = (EquipmentEntityLink[])race.FemaleOptions.Horns.Clone(),
+                    TailSkinColors = (EquipmentEntityLink[])race.FemaleOptions.TailSkinColors.Clone(),
+                };
+            }
+        }
+        static void UnlockFemaleDwarfBeards()
+        {
+            if (!settings.UnlockFemaleDwarfBeards) return;
+            var dwarf = ResourcesLibrary.TryGetBlueprint<BlueprintRace>("c4faf439f0e70bd40b5e36ee80d06be7");
+            foreach (var race in GetAllRaces())
+            {
+                var originalSource = GetOriginalOptions(race, Gender.Male);
+                dwarf.FemaleOptions.Beards = Combine(originalSource.Beards, dwarf.FemaleOptions.Beards);
+            }
+        }
+        static void Unlock()
+        {
+            CopyOptions();
+            UnlockHair();
+            UnlockHornsAndTails();
+            UnlockFemaleDwarfBeards();
+        }
+        static void UnlockHornsAndTails()
+        {
+            if (!Game.Instance.BlueprintRoot.DlcSettings.Tieflings.Enabled) return;
+            var races = GetAllRaces().Where(bp =>
+                        bp.AssetGuid != "5c4e42124dc2b4647af6e36cf2590500" ).ToArray();
+            var sourceRace = ResourcesLibrary.TryGetBlueprint<BlueprintRace>("5c4e42124dc2b4647af6e36cf2590500");
+            foreach (var targetRace in races)
+            {
+                foreach (var gender in new Gender[] { Gender.Male, Gender.Female })
+                {
+                    var newSource = gender == Gender.Male ? sourceRace.MaleOptions : sourceRace.FemaleOptions;
+                    var newTarget = gender == Gender.Male ? targetRace.MaleOptions : targetRace.FemaleOptions;
+                    if (settings.UnlockHorns)
+                    {
+                        newTarget.Horns = Combine(newSource.Horns, newTarget.Horns);
+                    }
+                    if (settings.UnlockTail)
+                    {
+                        newTarget.TailSkinColors = Combine(newSource.TailSkinColors, newTarget.TailSkinColors);
+                    }
+                }
+            }
+        }
         static void UnlockHair()
         {
-
+            if (!settings.UnlockHair) return;
             BlueprintRace[][] groups;
             if (settings.UnlockAllHair)
             {
                 groups = new BlueprintRace[][]
                 {
-                    ResourcesLibrary.GetBlueprints<BlueprintRace>().Where(
-                        bp => bp.AssetGuid.Length == 32 && bp.AssetGuid != "f414c5b12f2296c41901e71b889ef436").ToArray()
+                    GetAllRaces().Where(bp => 
+                        (bp.AssetGuid != "5c4e42124dc2b4647af6e36cf2590500" || Game.Instance.BlueprintRoot.DlcSettings.Tieflings.Enabled)).ToArray()
                 };
 
             } else {
@@ -178,7 +255,6 @@ namespace HairUnlocker
                     new BlueprintRace[]{
                         ResourcesLibrary.TryGetBlueprint<BlueprintRace>("0a5d473ead98b0646b94495af250fdc4"), //Human
                         ResourcesLibrary.TryGetBlueprint<BlueprintRace>("b7f02ba92b363064fb873963bec275ee"), //Aasimar
-                        ResourcesLibrary.TryGetBlueprint<BlueprintRace>("c4faf439f0e70bd40b5e36ee80d06be7"), //Dwarf
                     },
                     new BlueprintRace[]{
                         ResourcesLibrary.TryGetBlueprint<BlueprintRace>("ef35a22c9a27da345a4528f0d5889157"), //Gnome

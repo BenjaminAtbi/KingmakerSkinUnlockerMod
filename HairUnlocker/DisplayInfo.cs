@@ -24,6 +24,7 @@ namespace HairUnlocker
         static Dictionary<string, string> eelLookup = new Dictionary<string, string>();
         public static string GetName(EquipmentEntityLink link)
         {
+            if (link == null) return "NULL";
             if (eelLookup.ContainsKey(link.AssetId))
             {
                 return eelLookup[link.AssetId];
