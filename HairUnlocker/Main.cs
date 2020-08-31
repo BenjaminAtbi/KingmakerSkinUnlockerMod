@@ -1,5 +1,5 @@
 ﻿using System.Linq;
-using Harmony12;
+using HarmonyLib;
 using UnityModManagerNet;
 using System.Reflection;
 using System;
@@ -24,6 +24,10 @@ namespace HairUnlocker
         {
             if (logger != null) logger.Log(msg);
         }
+        public static void DebugError(Exception ex)
+        {
+            if (logger != null) logger.Log(ex.ToString() + "\n" + ex.StackTrace);
+        }
         static bool loaded = false;
         static bool enabled;
         static bool displayDebug = false;
@@ -40,9 +44,9 @@ namespace HairUnlocker
                 modEntry.OnSaveGUI = OnSaveGUI;
                 SceneManager.sceneLoaded += OnSceneManagerOnSceneLoaded;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                modEntry.Logger.Log(e.ToString() + "\n" + e.StackTrace);
+                DebugError(ex);
             }
             return true;
         }
@@ -80,17 +84,17 @@ namespace HairUnlocker
                     ChooseToggle(ref settings.UnlockTail, "Unlock Tails");
                 }
                 ChooseToggle(ref settings.UnlockFemaleDwarfBeards, "Unlock Female Dwarf Beards (Includes incompatible options)");
-#if (DEBUG)
+/*#if (DEBUG)
                 displayDebug = GUILayout.Toggle(displayDebug, "Show DisplayOptions");
                 if (displayDebug)
                 {
                     DisplayInfo.ShowDoll();
                     DisplayInfo.ShowHair();
                 }
-#endif
+#endif*/
             } catch (Exception ex)
             {
-                DebugLog(ex.ToString() + "\n" + ex.StackTrace);
+                DebugError(ex);
             }
         }
         static void OnSaveGUI(UnityModManager.ModEntry modEntry)
@@ -102,15 +106,20 @@ namespace HairUnlocker
             if (scene.name == SceneName.MainMenu)
             {
                 if (loaded) return;
-                foreach(var race in GetAllRaces())
+                try
                 {
-                    originalOptions[race.name + Gender.Male] = race.MaleOptions;
-                    originalOptions[race.name + Gender.Female] = race.FemaleOptions;
+                    foreach (var race in GetAllRaces())
+                    {
+                        originalOptions[race.name + Gender.Male] = race.MaleOptions;
+                        originalOptions[race.name + Gender.Female] = race.FemaleOptions;
+                    }
+                    loaded = true;
+                    if (!enabled) return;
+                    Unlock();
+                } catch(Exception ex)
+                {
+                    DebugError(ex);
                 }
-                loaded = true;
-                if (!enabled) return;
-                Unlock();
-                
             }
         }
         static BlueprintRace[] GetAllRaces()

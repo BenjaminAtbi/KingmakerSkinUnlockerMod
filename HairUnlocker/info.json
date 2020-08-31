@@ -2,11 +2,11 @@
   "Id": "HairUnlocker",
   "DisplayName": "Hair Unlocker",
   "Author": "spacehamster",
-  "Version": "1.1.0",
-  "ManagerVersion": "0.12.0",
+  "Version": "1.1.1",
+  "ManagerVersion": "0.22.9",
   "Requirements": [],
   "AssemblyName": "HairUnlocker.dll",
   "EntryMethod": "HairUnlocker.Main.Load",
-  "HomePage": "https://github.com/spacehamster/KingmakerHairUnlockerMod",
+  "HomePage": "https://www.nexusmods.com/pathfinderkingmaker/mods/60",
   "Repository": "https://raw.githubusercontent.com/spacehamster/KingmakerHairUnlockerMod/master/HairUnlocker/Repository.json"
 }
