@@ -13,7 +13,7 @@ using Kingmaker.Blueprints.CharGen;
 using UnityEngine;
 using Kingmaker.Blueprints.Root;
 
-namespace HairUnlocker
+namespace SkinUnlocker
 {
 
     public class Main
@@ -43,6 +43,7 @@ namespace HairUnlocker
                 modEntry.OnGUI = OnGUI;
                 modEntry.OnSaveGUI = OnSaveGUI;
                 SceneManager.sceneLoaded += OnSceneManagerOnSceneLoaded;
+
             }
             catch (Exception ex)
             {
@@ -76,23 +77,26 @@ namespace HairUnlocker
             try
             {
                 if (!loaded) return;
-                ChooseToggle(ref settings.UnlockHair, "Unlock Hair Options");
-                if(settings.UnlockHair) ChooseToggle(ref settings.UnlockAllHair, "Unlock All Hair Options (Includes incompatible options)");
-                if (BlueprintRoot.Instance.DlcSettings.Tieflings.Enabled)
-                {
-                    ChooseToggle(ref settings.UnlockHorns, "Unlock Horns");
-                    ChooseToggle(ref settings.UnlockTail, "Unlock Tails");
-                }
-                ChooseToggle(ref settings.UnlockFemaleDwarfBeards, "Unlock Female Dwarf Beards (Includes incompatible options)");
-/*#if (DEBUG)
-                displayDebug = GUILayout.Toggle(displayDebug, "Show DisplayOptions");
-                if (displayDebug)
-                {
-                    DisplayInfo.ShowDoll();
-                    DisplayInfo.ShowHair();
-                }
-#endif*/
-            } catch (Exception ex)
+                ChooseToggle(ref settings.UnlockSkin, "Unlock Skin Options");
+                //if (settings.UnlockHair) ChooseToggle(ref settings.UnlockAllHair, "Unlock All Hair Options (Includes incompatible options)");
+                //ChooseToggle(ref settings.UnlockHair, "Unlock Hair Options");
+                //if(settings.UnlockHair) ChooseToggle(ref settings.UnlockAllHair, "Unlock All Hair Options (Includes incompatible options)");
+                //if (BlueprintRoot.Instance.DlcSettings.Tieflings.Enabled)
+                //{
+                //    ChooseToggle(ref settings.UnlockHorns, "Unlock Horns");
+                //    ChooseToggle(ref settings.UnlockTail, "Unlock Tails");
+                //}
+                //ChooseToggle(ref settings.UnlockFemaleDwarfBeards, "Unlock Female Dwarf Beards (Includes incompatible options)");
+                /*#if (DEBUG)
+                                displayDebug = GUILayout.Toggle(displayDebug, "Show DisplayOptions");
+                                if (displayDebug)
+                                {
+                                    DisplayInfo.ShowDoll();
+                                    DisplayInfo.ShowHair();
+                                }
+                #endif*/
+            }
+            catch (Exception ex)
             {
                 DebugError(ex);
             }
@@ -159,16 +163,71 @@ namespace HairUnlocker
          * DollState looks up the index of eyebrows by the index of heads,
          * so existing heads are duplicated and a default eyebrow from the
          * target class is added         * 
-         */ 
-        static void AddEyebrowsDefaultEyebrows(CustomizationOptions newSource, CustomizationOptions newTarget, CustomizationOptions originalTarget)
+         */
+        //static void AddEyebrowsDefaultEyebrows(CustomizationOptions newSource, CustomizationOptions newTarget, CustomizationOptions originalTarget)
+        //{
+        //    var newHeads = newTarget.Heads
+        //        .Where(link => originalTarget.Heads.Contains(link))
+        //        .Select(link => new EquipmentEntityLink() { AssetId = link.AssetId });
+        //    newTarget.Heads = newTarget.Heads.AddRangeToArray(newHeads.ToArray());
+        //    var newEyebrows = Enumerable.Repeat(newSource.Eyebrows[0], newTarget.Heads.Length - newTarget.Eyebrows.Length);
+        //    newTarget.Eyebrows = newTarget.Eyebrows.AddRangeToArray(newEyebrows.ToArray());
+        //}
+
+        static void Unlock()
         {
-            var newHeads = newTarget.Heads
-                .Where(link => originalTarget.Heads.Contains(link))
-                .Select(link => new EquipmentEntityLink() { AssetId = link.AssetId });
-            newTarget.Heads = newTarget.Heads.AddRangeToArray(newHeads.ToArray());
-            var newEyebrows = Enumerable.Repeat(newSource.Eyebrows[0], newTarget.Heads.Length - newTarget.Eyebrows.Length);
-            newTarget.Eyebrows = newTarget.Eyebrows.AddRangeToArray(newEyebrows.ToArray());
+            CopyOptions();
+            UnlockHair();
+            //UnlockHornsAndTails();
+            //UnlockFemaleDwarfBeards();
         }
+        static void UnlockHair()
+        {
+            if (!settings.UnlockHair) return;
+            BlueprintRace[][] groups;
+            if (settings.UnlockAllHair)
+            {
+                groups = new BlueprintRace[][]
+                {
+                    GetAllRaces().Where(bp =>
+                        (bp.AssetGuid != "5c4e42124dc2b4647af6e36cf2590500" || Game.Instance.BlueprintRoot.DlcSettings.Tieflings.Enabled)).ToArray()
+                };
+
+            }
+            else
+            {
+                groups = new BlueprintRace[][]
+                 {
+                    new BlueprintRace[]{
+                        ResourcesLibrary.TryGetBlueprint<BlueprintRace>("0a5d473ead98b0646b94495af250fdc4"), //Human
+                        ResourcesLibrary.TryGetBlueprint<BlueprintRace>("b7f02ba92b363064fb873963bec275ee"), //Aasimar
+                    },
+                    new BlueprintRace[]{
+                        ResourcesLibrary.TryGetBlueprint<BlueprintRace>("ef35a22c9a27da345a4528f0d5889157"), //Gnome
+                        ResourcesLibrary.TryGetBlueprint<BlueprintRace>("b0c3ef2729c498f47970bb50fa1acd30"), //Halfling
+                    }
+                 };
+            }
+            foreach (var group in groups)
+            {
+                foreach (var from in group)
+                {
+                    foreach (var to in group)
+                    {
+                        if (from == to) continue;
+                        AddHair(from, to);
+                    }
+                }
+            }
+        }
+
+        static void AddSkin(BlueprintRace sourceRace, BlueprintRace targetRace)
+        {
+            // get head from characteroptions
+            // get all head.PrimaryRamps (so that it can be populated from ColorsProfile.PrimaryRamps before change)
+            // fill all head.PrimaryRamps
+        }
+
         static void AddHair(BlueprintRace sourceRace, BlueprintRace targetRace)
         {
             foreach (var gender in new Gender[] { Gender.Male, Gender.Female })
@@ -179,7 +238,7 @@ namespace HairUnlocker
                 var newTarget = gender == Gender.Male ? targetRace.MaleOptions : targetRace.FemaleOptions;
                 newTarget.Hair = Combine(newSource.Hair, newTarget.Hair);
                 newTarget.Beards = Combine(newSource.Beards, newTarget.Beards);
-                AddEyebrowsDefaultEyebrows(newSource, newTarget, originalTarget);
+                //AddEyebrowsDefaultEyebrows(newSource, newTarget, originalTarget);
             }
         }
         static void CopyOptions()
@@ -206,82 +265,42 @@ namespace HairUnlocker
                 };
             }
         }
-        static void UnlockFemaleDwarfBeards()
-        {
-            if (!settings.UnlockFemaleDwarfBeards) return;
-            var dwarf = ResourcesLibrary.TryGetBlueprint<BlueprintRace>("c4faf439f0e70bd40b5e36ee80d06be7");
-            foreach (var race in GetAllRaces())
-            {
-                var originalSource = GetOriginalOptions(race, Gender.Male);
-                dwarf.FemaleOptions.Beards = Combine(originalSource.Beards, dwarf.FemaleOptions.Beards);
-            }
-        }
-        static void Unlock()
-        {
-            CopyOptions();
-            UnlockHair();
-            UnlockHornsAndTails();
-            UnlockFemaleDwarfBeards();
-        }
-        static void UnlockHornsAndTails()
-        {
-            if (!Game.Instance.BlueprintRoot.DlcSettings.Tieflings.Enabled) return;
-            var races = GetAllRaces().Where(bp =>
-                        bp.AssetGuid != "5c4e42124dc2b4647af6e36cf2590500" ).ToArray();
-            var sourceRace = ResourcesLibrary.TryGetBlueprint<BlueprintRace>("5c4e42124dc2b4647af6e36cf2590500");
-            foreach (var targetRace in races)
-            {
-                foreach (var gender in new Gender[] { Gender.Male, Gender.Female })
-                {
-                    var newSource = gender == Gender.Male ? sourceRace.MaleOptions : sourceRace.FemaleOptions;
-                    var newTarget = gender == Gender.Male ? targetRace.MaleOptions : targetRace.FemaleOptions;
-                    if (settings.UnlockHorns)
-                    {
-                        newTarget.Horns = Combine(newSource.Horns, newTarget.Horns);
-                    }
-                    if (settings.UnlockTail)
-                    {
-                        newTarget.TailSkinColors = Combine(newSource.TailSkinColors, newTarget.TailSkinColors);
-                    }
-                }
-            }
-        }
-        static void UnlockHair()
-        {
-            if (!settings.UnlockHair) return;
-            BlueprintRace[][] groups;
-            if (settings.UnlockAllHair)
-            {
-                groups = new BlueprintRace[][]
-                {
-                    GetAllRaces().Where(bp => 
-                        (bp.AssetGuid != "5c4e42124dc2b4647af6e36cf2590500" || Game.Instance.BlueprintRoot.DlcSettings.Tieflings.Enabled)).ToArray()
-                };
 
-            } else {
-               groups = new BlueprintRace[][]
-                {
-                    new BlueprintRace[]{
-                        ResourcesLibrary.TryGetBlueprint<BlueprintRace>("0a5d473ead98b0646b94495af250fdc4"), //Human
-                        ResourcesLibrary.TryGetBlueprint<BlueprintRace>("b7f02ba92b363064fb873963bec275ee"), //Aasimar
-                    },
-                    new BlueprintRace[]{
-                        ResourcesLibrary.TryGetBlueprint<BlueprintRace>("ef35a22c9a27da345a4528f0d5889157"), //Gnome
-                        ResourcesLibrary.TryGetBlueprint<BlueprintRace>("b0c3ef2729c498f47970bb50fa1acd30"), //Halfling
-                    }
-                };
-            }
-            foreach (var group in groups)
-            {
-                foreach (var from in group)
-                {
-                    foreach (var to in group)
-                    {
-                        if (from == to) continue;
-                        AddHair(from, to);
-                    }
-                }
-            }
-        }
+        
+        //static void UnlockFemaleDwarfBeards()
+        //{
+        //    if (!settings.UnlockFemaleDwarfBeards) return;
+        //    var dwarf = ResourcesLibrary.TryGetBlueprint<BlueprintRace>("c4faf439f0e70bd40b5e36ee80d06be7");
+        //    foreach (var race in GetAllRaces())
+        //    {
+        //        var originalSource = GetOriginalOptions(race, Gender.Male);
+        //        dwarf.FemaleOptions.Beards = Combine(originalSource.Beards, dwarf.FemaleOptions.Beards);
+        //    }
+        //}
+
+        //static void UnlockHornsAndTails()
+        //{
+        //    if (!Game.Instance.BlueprintRoot.DlcSettings.Tieflings.Enabled) return;
+        //    var races = GetAllRaces().Where(bp =>
+        //                bp.AssetGuid != "5c4e42124dc2b4647af6e36cf2590500" ).ToArray();
+        //    var sourceRace = ResourcesLibrary.TryGetBlueprint<BlueprintRace>("5c4e42124dc2b4647af6e36cf2590500");
+        //    foreach (var targetRace in races)
+        //    {
+        //        foreach (var gender in new Gender[] { Gender.Male, Gender.Female })
+        //        {
+        //            var newSource = gender == Gender.Male ? sourceRace.MaleOptions : sourceRace.FemaleOptions;
+        //            var newTarget = gender == Gender.Male ? targetRace.MaleOptions : targetRace.FemaleOptions;
+        //            if (settings.UnlockHorns)
+        //            {
+        //                newTarget.Horns = Combine(newSource.Horns, newTarget.Horns);
+        //            }
+        //            if (settings.UnlockTail)
+        //            {
+        //                newTarget.TailSkinColors = Combine(newSource.TailSkinColors, newTarget.TailSkinColors);
+        //            }
+        //        }
+        //    }
+        //}
+
     }
 }

@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2046
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34622.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HairUnlocker", "HairUnlocker\HairUnlocker.csproj", "{1DAE59CF-6EB9-430B-9773-11F7BBCD0A86}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkinUnlocker", "SkinUnlocker\SkinUnlocker.csproj", "{1DAE59CF-6EB9-430B-9773-11F7BBCD0A86}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

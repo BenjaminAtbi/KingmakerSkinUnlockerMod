@@ -1,0 +1,12 @@
+{
+  "Id": "SkinUnlocker",
+  "DisplayName": "Skin Unlocker",
+  "Author": "belithioben",
+  "Version": "1.0",
+  "ManagerVersion": "0.22.9",
+  "Requirements": [],
+  "AssemblyName": "SkinUnlocker.dll",
+  "EntryMethod": "SkinUnlocker.Main.Load",
+  "HomePage": "---",
+  "Repository": "---"
+}

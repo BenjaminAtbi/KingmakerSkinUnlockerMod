@@ -11,9 +11,9 @@
     <ProjectGuid>{1DAE59CF-6EB9-430B-9773-11F7BBCD0A86}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>HairUnlocker</RootNamespace>
-    <AssemblyName>HairUnlocker</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <RootNamespace>SkinUnlocker</RootNamespace>
+    <AssemblyName>SkinUnlocker</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
@@ -21,7 +21,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>bin\Debug\SkinUnlocker\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -29,8 +29,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\HairUnlocker\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <OutputPath>bin\Release\SkinUnlocker\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -44,6 +44,18 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>..\..\..\Programs\GOG Galaxy\Games\Pathfinder Kingmaker\Kingmaker_Data\Managed\UnityModManager\0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="0Harmony-1.2">
+      <HintPath>..\..\..\Programs\GOG Galaxy\Games\Pathfinder Kingmaker\Kingmaker_Data\Managed\UnityModManager\0Harmony-1.2.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="dnlib">
+      <HintPath>..\..\..\Programs\GOG Galaxy\Games\Pathfinder Kingmaker\Kingmaker_Data\Managed\UnityModManager\dnlib.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -53,19 +65,19 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="0Harmony12">
-      <HintPath>$(KingMakerInstallDir)\Kingmaker_Data\Managed\UnityModManager\0Harmony.dll</HintPath>
+      <HintPath>..\..\..\Programs\GOG Galaxy\Games\Pathfinder Kingmaker\Kingmaker_Data\Managed\UnityModManager\0Harmony12.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityModManager">
-      <HintPath>$(KingMakerInstallDir)\Kingmaker_Data\Managed\UnityModManager\UnityModManager.dll</HintPath>
+      <HintPath>..\..\..\Programs\GOG Galaxy\Games\Pathfinder Kingmaker\Kingmaker_Data\Managed\UnityModManager\UnityModManager.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(KingMakerInstallDir)\Kingmaker_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\..\Programs\GOG Galaxy\Games\Pathfinder Kingmaker\Kingmaker_Data\Managed\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>$(KingMakerInstallDir)\Kingmaker_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>..\..\..\Programs\GOG Galaxy\Games\Pathfinder Kingmaker\Kingmaker_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine">
@@ -73,11 +85,11 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(KingMakerInstallDir)\Kingmaker_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\..\..\Programs\GOG Galaxy\Games\Pathfinder Kingmaker\Kingmaker_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>$(KingMakerInstallDir)\Kingmaker_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>..\..\..\Programs\GOG Galaxy\Games\Pathfinder Kingmaker\Kingmaker_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.UI">
