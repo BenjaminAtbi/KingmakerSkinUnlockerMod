@@ -18,6 +18,15 @@ using Kingmaker.Blueprints.Classes.Prerequisites;
 using Kingmaker.Utility;
 using Kingmaker.UnitLogic.Class.LevelUp;
 using System.Diagnostics;
+using Kingmaker.UI.LevelUp;
+using TMPro;
+using Kingmaker.Localization;
+using System.Reflection.Emit;
+//using Harmony12;
+using Kingmaker.Visual;
+using System.Runtime.Remoting.Messaging;
+using static HBAO_Core;
+
 namespace SkinUnlocker
 {
 
@@ -48,7 +57,8 @@ namespace SkinUnlocker
                 modEntry.OnGUI = OnGUI;
                 modEntry.OnSaveGUI = OnSaveGUI;
                 SceneManager.sceneLoaded += OnSceneManagerOnSceneLoaded;
-
+                var harmony = new Harmony(modEntry.Info.Id);
+                harmony.PatchAll(Assembly.GetExecutingAssembly());
             }
             catch (Exception ex)
             {
@@ -84,14 +94,7 @@ namespace SkinUnlocker
                 if (!loaded) return;
                 ChooseToggle(ref settings.UnlockSkin, "Unlock Skin Options");
                 ChooseToggle(ref settings.UnlockHair, "Unlock Hair Options");
-                
-                //if(settings.UnlockHair) ChooseToggle(ref settings.UnlockAllHair, "Unlock All Hair Options (Includes incompatible options)");
-                //if (BlueprintRoot.Instance.DlcSettings.Tieflings.Enabled)
-                //{
-                //    ChooseToggle(ref settings.UnlockHorns, "Unlock Horns");
-                //    ChooseToggle(ref settings.UnlockTail, "Unlock Tails");
-                //}
-                //ChooseToggle(ref settings.UnlockFemaleDwarfBeards, "Unlock Female Dwarf Beards (Includes incompatible options)");
+          
                 /*#if (DEBUG)
                                 displayDebug = GUILayout.Toggle(displayDebug, "Show DisplayOptions");
                                 if (displayDebug)
@@ -215,90 +218,94 @@ namespace SkinUnlocker
             }
         }
 
+        class RampNameCompare : IEqualityComparer<Texture2D>
+        {
+            public bool Equals(Texture2D a, Texture2D b)
+            {
+                return a.name.Split('_')[2].Equals(b.name.Split('_')[2]);
+            }
+
+            public int GetHashCode(Texture2D obj)
+            {
+                return obj.name.Split('_')[2].GetHashCode();
+            }
+        }
+
         static void UnlockSkin()
         {
             if (!settings.UnlockSkin) return;
 
-            var bodyEntities = new List<EquipmentEntity>();
-            foreach (var race in ResourcesLibrary.GetBlueprints<BlueprintRaceVisualPreset>())
+            var raceBodies = new Dictionary<Race, List<EquipmentEntity>>();
+            var raceHeads = new Dictionary<Race, List<EquipmentEntity>>();
+            var raceRamps = new Dictionary<Race, List<Texture2D>>();
+
+            foreach (var racePreset in ResourcesLibrary.GetBlueprints<BlueprintRaceVisualPreset>())
             {
+                var entityLinks = new List<EquipmentEntityLink>();
+
                 foreach (var gender in new Gender[] { Gender.Male, Gender.Female })
                 {
-                    var entities = race.Skin.GetLinks(gender, ((race != null) ? new Race?(race.RaceId) : null).Value);
-                    bodyEntities.AddRange(entities.Select(e => e.Load()));
+                    entityLinks.AddRange(racePreset.Skin.GetLinks(gender, racePreset.RaceId));
+                }
+
+                Race racePresetRace;
+                if (Enum.TryParse(racePreset.name.Split('_')[0], out racePresetRace)){
+                    if (raceBodies.ContainsKey(racePresetRace))
+                    {
+                        raceBodies.Get(racePresetRace).AddRange(entityLinks.Select(e => e.Load()));
+                    }
+                    else raceBodies.Add(racePresetRace, entityLinks.Select(e => e.Load()).ToList());
                 }
             } 
 
-            DebugLog("unlocking skins");
-            List<BlueprintRace> Races = new List<BlueprintRace>(GetAllRaces().Where(
-                bp => (bp.AssetGuid != "5c4e42124dc2b4647af6e36cf2590500" || Game.Instance.BlueprintRoot.DlcSettings.Tieflings.Enabled)));
-
-            //DebugLog($"Races:\n {String.Join("\n",Races)}");
-
-            var Heads = new List<EquipmentEntity>(Races.SelectMany(r => r.MaleOptions.Heads.Concat(r.FemaleOptions.Heads)).Select(h => h.Load(false) as EquipmentEntity));
-
-            //DebugLog($"Heads:\n {String.Join("\n", Heads)}");
-
-            Comparison<Texture2D> comparator = (a, b) => a.name.Split('_')[2].CompareTo(b.name.Split('_')[2]);
-            List<Texture2D> dupeRamps = Heads.SelectMany(h => h.ColorsProfile.PrimaryRamps).ToList();
-            List<Texture2D> Ramps = new List<Texture2D>();
-
-            foreach(var eval_ramp in dupeRamps)
+            foreach(var race in GetAllRaces().Where(bp => (bp.AssetGuid != "5c4e42124dc2b4647af6e36cf2590500" || Game.Instance.BlueprintRoot.DlcSettings.Tieflings.Enabled)))
             {
-                if (Ramps.Exists(ramp => comparator(ramp, eval_ramp) == 0) == false)
+                var heads = (race.MaleOptions.Heads.Concat(race.FemaleOptions.Heads)).Select(h => h.Load() as EquipmentEntity);
+
+                raceHeads.Add(race.RaceId, heads.ToList());
+                raceRamps.Add(race.RaceId, heads.First().ColorsProfile.PrimaryRamps.ToList());
+            }
+
+            DebugLog("body part keys: " + raceBodies.Keys.Aggregate("", (str, k) => str+k.ToString()));
+            //DebugLog("body parts: " + raceBodyParts.Aggregate("", (str, k) => str + "["+String.Join(",", k.Value.Select(v => v.name))+"]\n"));
+            DebugLog("head keys: " + raceHeads.Keys.Aggregate("", (str, k) => str + k.ToString()));
+            DebugLog("ramp keys: " + raceRamps.Keys.Aggregate("", (str, k) => str + k.ToString()));
+
+            var races = (IEnumerable<Race>)Enum.GetValues(typeof(Race));
+            List<Texture2D> allRamps = races.Where(r => raceRamps.ContainsKey(r)).SelectMany(r => raceRamps.Get(r)).ToList();
+            foreach (var race in races)
+            {
+                var complementRaces = races.Where(cRace => cRace != race);
+                var complementRamps = complementRaces.Where(r => raceRamps.ContainsKey(r)).SelectMany(r => raceRamps.Get(r));
+                
+                Comparison<Texture2D> nameCompare = (a, b) => a.name.Split('_')[2].CompareTo(b.name.Split('_')[2]);
+                List<Texture2D> filteredRamps = complementRamps.Distinct(new RampNameCompare()).ToList();
+                filteredRamps.Sort((a, b) => a.name.Split('_')[2].CompareTo(b.name.Split('_')[2]));
+
+                if(race == Race.Human) DebugLog($"human ramps:\n {String.Join("\n", filteredRamps.Select(r => r.name))}");
+
+                if (raceHeads.ContainsKey(race))
                 {
-                    Ramps.Add(eval_ramp);
+                    foreach (var head in raceHeads.Get(race))
+                    {
+                        head.ColorsProfile.PrimaryRamps.AddRange(filteredRamps);
+                    }
+                }
+
+                if (raceBodies.ContainsKey(race))
+                {
+                    foreach (var part in raceBodies.Get(race))
+                    {
+                        if (part.ColorsProfile == null)
+                        {
+                            part.ColorsProfile = new CharacterColorsProfile();
+                            part.ColorsProfile.SecondaryRamps = part.SecondaryRamps;
+                        }
+                        part.ColorsProfile.PrimaryRamps.AddRange(filteredRamps);
+                    }
                 }
             }
-            Ramps.Sort(comparator);
-            
-            //DebugLog($"ramps:\n {String.Join("\n", Ramps)}");
-
-            foreach (var head in Heads)
-            {
-                head.ColorsProfile.PrimaryRamps = Ramps;
-            }
-
-            foreach(var body in bodyEntities)
-            {
-                if(body.ColorsProfile == null)
-                {
-                    body.ColorsProfile = new CharacterColorsProfile();
-                }
-                body.ColorsProfile.PrimaryRamps = Ramps;
-            }
         }
-
-
-        // PrimaryRamps does not have a setter so we have to make our own
-         
-        public delegate void SetPrimaryRampsDelegate(object obj, object value);
-
-        public static SetPrimaryRampsDelegate GetPrimaryRampsSetter(object type_reference)
-        {
-            DebugLog("get type");
-            Type EquipmentEntityType = type_reference.GetType();
-            DebugLog($"get info: {EquipmentEntityType.FullName}");
-            PropertyInfo rampProp = EquipmentEntityType.GetProperties().Where(prop => prop.Name == "PrimaryRamps").First();
-            DebugLog("get field");
-            var backingField = rampProp.DeclaringType.GetField($"<{rampProp.Name}>k__BackingField", BindingFlags.Public);
-            return (obj, value) => backingField.SetValue(obj, value);
-        }
-
-        /*
-         * DollState looks up the index of eyebrows by the index of heads,
-         * so existing heads are duplicated and a default eyebrow from the
-         * target class is added         * 
-         */
-        //static void AddEyebrowsDefaultEyebrows(CustomizationOptions newSource, CustomizationOptions newTarget, CustomizationOptions originalTarget)
-        //{
-        //    var newHeads = newTarget.Heads
-        //        .Where(link => originalTarget.Heads.Contains(link))
-        //        .Select(link => new EquipmentEntityLink() { AssetId = link.AssetId });
-        //    newTarget.Heads = newTarget.Heads.AddRangeToArray(newHeads.ToArray());
-        //    var newEyebrows = Enumerable.Repeat(newSource.Eyebrows[0], newTarget.Heads.Length - newTarget.Eyebrows.Length);
-        //    newTarget.Eyebrows = newTarget.Eyebrows.AddRangeToArray(newEyebrows.ToArray());
-        //}
 
         static void AddHair(BlueprintRace sourceRace, BlueprintRace targetRace)
         {
@@ -338,7 +345,31 @@ namespace SkinUnlocker
             }
         }
 
-        
+        [HarmonyPatch(typeof(CharBColorSelector), nameof(CharBColorSelector.SetData))]
+        static class CharBColorSelector_SetData_Patch
+        {
+            //Postfix must be spelt correctly to be applied
+
+            static void Postfix(CharBColorSelector __instance, LocalizedString label)
+            {
+                __instance.m_Label.text = "dicks per second";
+            }
+        }
+        /*
+ * DollState looks up the index of eyebrows by the index of heads,
+ * so existing heads are duplicated and a default eyebrow from the
+ * target class is added         * 
+ */
+        //static void AddEyebrowsDefaultEyebrows(CustomizationOptions newSource, CustomizationOptions newTarget, CustomizationOptions originalTarget)
+        //{
+        //    var newHeads = newTarget.Heads
+        //        .Where(link => originalTarget.Heads.Contains(link))
+        //        .Select(link => new EquipmentEntityLink() { AssetId = link.AssetId });
+        //    newTarget.Heads = newTarget.Heads.AddRangeToArray(newHeads.ToArray());
+        //    var newEyebrows = Enumerable.Repeat(newSource.Eyebrows[0], newTarget.Heads.Length - newTarget.Eyebrows.Length);
+        //    newTarget.Eyebrows = newTarget.Eyebrows.AddRangeToArray(newEyebrows.ToArray());
+        //}
+
         //static void UnlockFemaleDwarfBeards()
         //{
         //    if (!settings.UnlockFemaleDwarfBeards) return;
