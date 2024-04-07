@@ -266,44 +266,69 @@ namespace SkinUnlocker
                 raceRamps.Add(race.RaceId, heads.First().ColorsProfile.PrimaryRamps.ToList());
             }
 
-            DebugLog("body part keys: " + raceBodies.Keys.Aggregate("", (str, k) => str+k.ToString()));
-            //DebugLog("body parts: " + raceBodyParts.Aggregate("", (str, k) => str + "["+String.Join(",", k.Value.Select(v => v.name))+"]\n"));
-            DebugLog("head keys: " + raceHeads.Keys.Aggregate("", (str, k) => str + k.ToString()));
-            DebugLog("ramp keys: " + raceRamps.Keys.Aggregate("", (str, k) => str + k.ToString()));
+            //DebugLog("body part keys: " + raceBodies.Keys.Aggregate("", (str, k) => str+k.ToString()));
+            //DebugLog("colours base: " + raceBodies.Aggregate("", (str, k) => str + $" {k.Key} [ " +
+            //$"{(String.Join(",", k.Value.First().PrimaryRamps.Select(r => r.name)))} ] \n"));
+            //DebugLog("colours profile: " + raceBodies.Aggregate("", (str, k) => str + $" {k.Key} [ " +
+            //$"{ (k.Value.First().ColorsProfile == null ? "no colorsprofile" : String.Join(",",k.Value.First().ColorsProfile.PrimaryRamps.Select(r => r.name)))} ] \n"));
+            ////Select(v => (v.ColorsProfile != null ? v.ColorsProfile.PrimaryRamps : "")))}]\n"));
+            //DebugLog("head parts: " + raceHeads.Aggregate("", (str, k) => str + $" {k.Key} [ {String.Join(",", k.Value.Select(v => v.name))}]\n"));
+            //DebugLog("ramp parts: " + raceRamps.Aggregate("", (str, k) => str + $" {k.Key} [ {String.Join(",", k.Value.Select(v => v.name))}]\n"));
 
             var races = (IEnumerable<Race>)Enum.GetValues(typeof(Race));
             List<Texture2D> allRamps = races.Where(r => raceRamps.ContainsKey(r)).SelectMany(r => raceRamps.Get(r)).ToList();
             foreach (var race in races)
             {
-                var complementRaces = races.Where(cRace => cRace != race);
-                var complementRamps = complementRaces.Where(r => raceRamps.ContainsKey(r)).SelectMany(r => raceRamps.Get(r));
-                
-                Comparison<Texture2D> nameCompare = (a, b) => a.name.Split('_')[2].CompareTo(b.name.Split('_')[2]);
-                List<Texture2D> filteredRamps = complementRamps.Distinct(new RampNameCompare()).ToList();
-                filteredRamps.Sort((a, b) => a.name.Split('_')[2].CompareTo(b.name.Split('_')[2]));
-
-                if(race == Race.Human) DebugLog($"human ramps:\n {String.Join("\n", filteredRamps.Select(r => r.name))}");
-
-                if (raceHeads.ContainsKey(race))
+                if (raceHeads.ContainsKey(race) && raceBodies.ContainsKey(race))
                 {
+                    // we need to keep the default colors for each race at the start of the list, to avoid changing the color of some npcs
+                    var complementRaces = races.Where(cRace => cRace != race);
+                    var complementRamps = complementRaces.Where(r => raceRamps.ContainsKey(r)).SelectMany(r => raceRamps.Get(r));
+                    var filteredRamps = complementRamps.Distinct(new RampNameCompare()).ToList();
+                    filteredRamps.Sort((a, b) => a.name.Split('_')[2].CompareTo(b.name.Split('_')[2]));
+                    var unifiedRamps = raceHeads.Get(race).First().PrimaryRamps.Concat(filteredRamps).ToList();
+                    var defaultSecondary = raceHeads.Get(race).First().SecondaryRamps;
+                    var profile = new CharacterColorsProfile { PrimaryRamps = unifiedRamps, SecondaryRamps = defaultSecondary};
+
                     foreach (var head in raceHeads.Get(race))
                     {
-                        head.ColorsProfile.PrimaryRamps.AddRange(filteredRamps);
+                        head.ColorsProfile = profile;
                     }
-                }
 
-                if (raceBodies.ContainsKey(race))
-                {
                     foreach (var part in raceBodies.Get(race))
-                    {
-                        if (part.ColorsProfile == null)
-                        {
-                            part.ColorsProfile = new CharacterColorsProfile();
-                            part.ColorsProfile.SecondaryRamps = part.SecondaryRamps;
-                        }
-                        part.ColorsProfile.PrimaryRamps.AddRange(filteredRamps);
+                    {                    
+                        part.ColorsProfile = profile;
                     }
                 }
+                    
+                
+
+                //if (raceHeads.ContainsKey(race))
+                //{
+                    
+                //}
+
+                //if (raceBodies.ContainsKey(race))
+                //{
+                //    foreach (var part in raceBodies.Get(race))
+                //    {
+                //        if (part.ColorsProfile == null)
+                //        {
+                //            part.ColorsProfile = new CharacterColorsProfile();
+                //            part.ColorsProfile.PrimaryRamps = part.PrimaryRamps;
+                //            part.ColorsProfile.SecondaryRamps = part.SecondaryRamps;
+                //        }
+                //        part.ColorsProfile.PrimaryRamps.AddRange(filteredRamps);
+                //        if (race == Race.Aasimar || race == Race.Dwarf) DebugLog(
+                //            $"{race} \n" +
+                //            $"head:  {raceHeads.Get(race).First().ColorsProfile.PrimaryRamps.Count()} \n" +
+                //            $"body:  {String.Join(",", part.name +" " + part.ColorsProfile.PrimaryRamps.Count())} \n");
+                //    }
+                //}
+
+                //if (race == Race.Aasimar || race == Race.Dwarf) DebugLog($"{race} head:\n {String.Join("\n", raceHeads.Get(race).First().ColorsProfile.PrimaryRamps.Select(r => r.name))} \n " +
+                    //$"body:\n {String.Join("\n", raceBodies.Get(race).First().ColorsProfile.PrimaryRamps.Select(r => r.name))} \n");
+
             }
         }
 
