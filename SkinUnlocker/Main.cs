@@ -47,6 +47,7 @@ namespace SkinUnlocker
         static bool displayDebug = false;
         static Settings settings;
         static Dictionary<string, CustomizationOptions> originalOptions = new Dictionary<string, CustomizationOptions>();
+
         static bool Load(UnityModManager.ModEntry modEntry)
         {
             try
@@ -172,7 +173,7 @@ namespace SkinUnlocker
 
         static void Unlock()
         {
-            CopyOptions();
+            //CopyOptions();
             UnlockHair();
             UnlockSkin();
             //UnlockHornsAndTails();
@@ -242,13 +243,13 @@ namespace SkinUnlocker
             foreach (var racePreset in ResourcesLibrary.GetBlueprints<BlueprintRaceVisualPreset>())
             {
                 var entityLinks = new List<EquipmentEntityLink>();
+                Race racePresetRace;
 
                 foreach (var gender in new Gender[] { Gender.Male, Gender.Female })
                 {
                     entityLinks.AddRange(racePreset.Skin.GetLinks(gender, racePreset.RaceId));
                 }
-
-                Race racePresetRace;
+                
                 if (Enum.TryParse(racePreset.name.Split('_')[0], out racePresetRace)){
                     if (raceBodies.ContainsKey(racePresetRace))
                     {
@@ -276,19 +277,16 @@ namespace SkinUnlocker
             //DebugLog("ramp parts: " + raceRamps.Aggregate("", (str, k) => str + $" {k.Key} [ {String.Join(",", k.Value.Select(v => v.name))}]\n"));
 
             var races = (IEnumerable<Race>)Enum.GetValues(typeof(Race));
-            List<Texture2D> allRamps = races.Where(r => raceRamps.ContainsKey(r)).SelectMany(r => raceRamps.Get(r)).ToList();
+            List<Texture2D> allRamps = races.Where(r => raceRamps.ContainsKey(r)).SelectMany(r => raceRamps.Get(r)).Distinct(new RampNameCompare()).ToList();
+            allRamps.Sort((a, b) => a.name.Split('_')[2].CompareTo(b.name.Split('_')[2]));
+
             foreach (var race in races)
             {
                 if (raceHeads.ContainsKey(race) && raceBodies.ContainsKey(race))
                 {
-                    // we need to keep the default colors for each race at the start of the list, to avoid changing the color of some npcs
-                    var complementRaces = races.Where(cRace => cRace != race);
-                    var complementRamps = complementRaces.Where(r => raceRamps.ContainsKey(r)).SelectMany(r => raceRamps.Get(r));
-                    var filteredRamps = complementRamps.Distinct(new RampNameCompare()).ToList();
-                    filteredRamps.Sort((a, b) => a.name.Split('_')[2].CompareTo(b.name.Split('_')[2]));
-                    var unifiedRamps = raceHeads.Get(race).First().PrimaryRamps.Concat(filteredRamps).ToList();
-                    var defaultSecondary = raceHeads.Get(race).First().SecondaryRamps;
-                    var profile = new CharacterColorsProfile { PrimaryRamps = unifiedRamps, SecondaryRamps = defaultSecondary};
+                    var currentRamps = raceHeads.Get(race).First().PrimaryRamps;
+                    var unifiedRamps = currentRamps.Concat(allRamps.Except(currentRamps)).ToList();
+                    var profile = new CharacterColorsProfile { PrimaryRamps = unifiedRamps, SecondaryRamps = raceHeads.Get(race).First().SecondaryRamps };
 
                     foreach (var head in raceHeads.Get(race))
                     {
@@ -300,35 +298,6 @@ namespace SkinUnlocker
                         part.ColorsProfile = profile;
                     }
                 }
-                    
-                
-
-                //if (raceHeads.ContainsKey(race))
-                //{
-                    
-                //}
-
-                //if (raceBodies.ContainsKey(race))
-                //{
-                //    foreach (var part in raceBodies.Get(race))
-                //    {
-                //        if (part.ColorsProfile == null)
-                //        {
-                //            part.ColorsProfile = new CharacterColorsProfile();
-                //            part.ColorsProfile.PrimaryRamps = part.PrimaryRamps;
-                //            part.ColorsProfile.SecondaryRamps = part.SecondaryRamps;
-                //        }
-                //        part.ColorsProfile.PrimaryRamps.AddRange(filteredRamps);
-                //        if (race == Race.Aasimar || race == Race.Dwarf) DebugLog(
-                //            $"{race} \n" +
-                //            $"head:  {raceHeads.Get(race).First().ColorsProfile.PrimaryRamps.Count()} \n" +
-                //            $"body:  {String.Join(",", part.name +" " + part.ColorsProfile.PrimaryRamps.Count())} \n");
-                //    }
-                //}
-
-                //if (race == Race.Aasimar || race == Race.Dwarf) DebugLog($"{race} head:\n {String.Join("\n", raceHeads.Get(race).First().ColorsProfile.PrimaryRamps.Select(r => r.name))} \n " +
-                    //$"body:\n {String.Join("\n", raceBodies.Get(race).First().ColorsProfile.PrimaryRamps.Select(r => r.name))} \n");
-
             }
         }
 
